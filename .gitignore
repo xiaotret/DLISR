@@ -1,0 +1,32 @@
+!.gitignore
+# Windows:
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python:
+*.py[cod]
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+#pycharm
+.xml
+
+/.idea/*
+/data/*
+/result/*
+/pre_trained_embeddings/*
+
+# data
+.csv
+.txt
+.df
+
+# result
+.dat
+.h5
+.obj
+.whole_model
