@@ -13,7 +13,7 @@ from prettytable import PrettyTable
 
 import pickle
 
-from path_config import time_path, evaluate_path
+from core.path_config import time_path, evaluate_path
 
 
 def evalute_by_epoch(recommend_model, model, model_name, test_data, show_cases=0, record_time=False,
@@ -42,7 +42,7 @@ def evalute_by_epoch(recommend_model, model, model_name, test_data, show_cases=0
         predictions = []  # 测试样本一次的预测结果
         for i in range(test_instance_num):
             candidate_ids = test_api_id_list[i]
-            test_batch_size = data_repository.get_args().batch_size
+            test_batch_size = data_repository.get_args().test_batch_size
             prediction = []
 
             # test api 太多，手动分batch预测

@@ -1,12 +1,12 @@
 import sys
 
-from keras.activations import tanh
+from tensorflow.keras.activations import tanh
 import tensorflow as tf
-import keras.backend as K
-from keras import Input, Model
-from keras.layers import Multiply, Subtract, Concatenate, Dense, Lambda, Conv1D, Conv2D, Reshape, PReLU, \
+import tensorflow.keras.backend as K
+from tensorflow.keras import Input, Model
+from tensorflow.keras.layers import Multiply, Subtract, Concatenate, Dense, Lambda, Conv1D, Conv2D, Reshape, PReLU, \
     Dropout, Add, Activation, TimeDistributed, multiply  # Softmax,
-from keras.layers.core import RepeatVector,Permute
+from tensorflow.keras.layers import RepeatVector,Permute
 
 # 原始实现，弃用
 def attention(query,key,value,att_hidden_units = (64, 16)):

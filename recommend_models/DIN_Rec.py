@@ -6,13 +6,13 @@ from model_component.utils import NoMask
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.layers import Lambda
-from tensorflow.python.keras.layers import Dense, Input, Concatenate, Embedding
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.initializers import Constant
-from tensorflow.python.keras.regularizers import l2
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.keras.layers import Lambda
+from tensorflow.keras.layers import Dense, Input, Concatenate, Embedding
+from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.initializers import Constant
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.optimizers import Adam
 
 class DIN_Rec (object):
     def __init__(self,CI_recommend_model,predict_fc_unit_nums,new_old = 'new'):

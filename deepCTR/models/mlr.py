@@ -6,10 +6,10 @@ Author:
 Reference:
     [1] Gai K, Zhu X, Li H, et al. Learning Piece-wise Linear Models from Large Scale Data for Ad Click Prediction[J]. arXiv preprint arXiv:1704.05194, 2017.(https://arxiv.org/abs/1704.05194)
 """
-from tensorflow.python.keras.initializers import TruncatedNormal
-from tensorflow.python.keras.layers import Input, Dense, Embedding, Concatenate, Activation, Reshape, add, dot
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras.initializers import TruncatedNormal
+from tensorflow.keras.layers import Input, Dense, Embedding, Concatenate, Activation, Reshape, add, dot
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 
 from ..layers.core import PredictionLayer
 

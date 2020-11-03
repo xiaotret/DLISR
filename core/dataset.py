@@ -73,7 +73,7 @@ class dataset(object):
         :return: train_data和test_data都是字典类型
                 具体的，list类型
         """
-        self.train_df,self.test_df = self.train_df[:1000],self.test_df[:2] # 快速测试
+        # self.train_df,self.test_df = self.train_df[:1000],self.test_df[:2] # 快速测试
         if self.train_data is None or self.test_data is None:
             if not self.args.pairwise:
                 def expand_mashup_ids(row):

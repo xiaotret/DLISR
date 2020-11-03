@@ -1,9 +1,9 @@
 import sys
 import os
 import numpy as np
-from tensorflow.python.keras.callbacks import EarlyStopping
-from tensorflow.python.keras.optimizers import Adam
-from tensorflow.python.keras import utils
+from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras import utils
 import matplotlib.pyplot as plt
 
 from core.evalute import evalute_by_epoch, summary
@@ -47,7 +47,7 @@ def train_best_NDCG_model(recommend_model, model, train_data, test_data, true_ca
         print('Epoch {}'.format(epoch))
 
         hist = train_model.fit(train_instances_dict, np.array(train_labels),
-                               batch_size=data_repository.get_args().batch_size, epochs=1, verbose=2, shuffle=True,
+                               batch_size=data_repository.get_args().batch_size, epochs=1, verbose=1, shuffle=True,
                                validation_split=data_repository.get_args().validation_split)
         print('Epoch {}, train done!'.format(epoch))
 
@@ -117,7 +117,7 @@ def save_loss_acc(train_log, model_name, epoch=0, if_multi_epoch=False):
                 f.write('{},{},{}\n'.format(epoch, train_log.history["loss"][0], train_log.history["acc"][0]))
             else:
                 f.write('{},{},{},{},{}\n'.format(epoch, train_log.history["loss"][0], train_log.history["val_loss"][0],
-                                                  train_log.history["acc"][0], train_log.history["val_acc"][0]))
+                                                  train_log.history["accuracy"][0], train_log.history["val_accuracy"][0]))
     else:
         with open(data_repository.get_args().loss_path, 'a+') as f:
             f.write(model_name + 'EarlyStop' + '\n')

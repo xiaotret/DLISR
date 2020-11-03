@@ -2,7 +2,7 @@
 import os
 import sys
 
-from NI_Model import NI_Model
+from recommend_models.NI_Model import NI_Model
 from recommend_models.DIN_Rec import DIN_Rec
 from recommend_models.HINRec import HINRec
 from recommend_models.MISR_models import top_MLP
@@ -254,13 +254,13 @@ def CI_NI_fineTuning():
     CI_model_obj = CI_recommend_model.get_model()
     CI_model_obj = train_model(CI_recommend_model, CI_model_obj,train_data,test_data,args.train_mode,args.train_new)
 
-    # implict
-    HINRec_model = HINRec(args,model_name=args.NI_sim_mode, epoch_num=40, neighbor_size=15, topTopicNum=3)
-    implict_NI_recommend_model = NI_Model(args)
-    implict_NI_recommend_model.prepare(HINRec_model,train_data, test_data)  # NI的模型搭建需要CI模型生成所有mashup/api的feature
-    implict_NI_model_obj = implict_NI_recommend_model.get_model()
-    implict_NI_model_obj = train_model(implict_NI_recommend_model, implict_NI_model_obj, train_data,
-                                                 test_data, args.train_mode,args.train_new)
+    # # implict
+    # HINRec_model = HINRec(args,model_name=args.NI_sim_mode, epoch_num=40, neighbor_size=15, topTopicNum=3)
+    # implict_NI_recommend_model = NI_Model(args)
+    # implict_NI_recommend_model.prepare(HINRec_model,train_data, test_data)  # NI的模型搭建需要CI模型生成所有mashup/api的feature
+    # implict_NI_model_obj = implict_NI_recommend_model.get_model()
+    # implict_NI_model_obj = train_model(implict_NI_recommend_model, implict_NI_model_obj, train_data,
+    #                                              test_data, args.train_mode,args.train_new)
 
     # # explicit
     # explicit_NI_recommend_model = NI_Model(new_old,if_implict=False,if_explict=True,if_correlation=False)
@@ -280,9 +280,9 @@ def CI_NI_fineTuning():
     # cor_NI_model_obj = cor_NI_recommend_model.get_model()
     # cor_NI_model_obj = train_model(cor_NI_recommend_model, cor_NI_model_obj,train_data, test_data, *new_Para.param.train_paras)
 
-    # # CI+ implict
-    top_MLP_recommend_model = top_MLP(args,
-                                      CI_recommend_model,CI_model_obj,NI_recommend_model1=implict_NI_recommend_model,NI_model1=implict_NI_model_obj)
+    # # # CI+ implict
+    # top_MLP_recommend_model = top_MLP(args,
+    #                                   CI_recommend_model,CI_model_obj,NI_recommend_model1=implict_NI_recommend_model,NI_model1=implict_NI_model_obj)
 
     # # CI+ explicit
     # top_MLP_recommend_model = top_MLP(CI_recommend_model, CI_model_obj,NI_recommend_model2=explicit_NI_recommend_model,NI_model2=explict_NI_model_obj)
@@ -296,10 +296,10 @@ def CI_NI_fineTuning():
     #                                   NI_model2=explict_NI_model_obj,new_old=new_old
     #                                   ) # cor_NI_recommend_model,cor_NI_model_obj
 
-    top_MLP_model = top_MLP_recommend_model.get_model()
-    top_MLP_model = train_model(top_MLP_recommend_model, top_MLP_model, train_data, test_data,args.train_mode,args.train_new)
-    top_MLP_model = train_model(top_MLP_recommend_model, top_MLP_model, train_data, test_data,args.train_mode,args.train_new)
-    top_MLP_recommend_model.save_sth() # 存储训练测试过程中使用的所有实例的中间结果
+    # top_MLP_model = top_MLP_recommend_model.get_model()
+    # top_MLP_model = train_model(top_MLP_recommend_model, top_MLP_model, train_data, test_data,args.train_mode,args.train_new)
+    # top_MLP_model = train_model(top_MLP_recommend_model, top_MLP_model, train_data, test_data,args.train_mode,args.train_new)
+    # top_MLP_recommend_model.save_sth() # 存储训练测试过程中使用的所有实例的中间结果
 
     # fine_Tune_mode = '3MLP_att'
     # fineTune_recommend_model = fine_Tune(CI_recommend_model,NI_recommend_model,top_MLP_recommend_model,CI_model_obj,NI_model_obj,top_MLP_model,mode=fine_Tune_mode)

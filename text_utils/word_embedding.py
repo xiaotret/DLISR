@@ -2,7 +2,7 @@
 import os
 import gensim
 import numpy as np
-from tensorflow.python.keras.models import Model
+from tensorflow.keras.models import Model
 
 from core.path_config import glove_embedding_path, google_embedding_path
 

@@ -4,11 +4,13 @@ import os
 # import nltk
 # from nltk.corpus import stopwords
 # from nltk.tokenize import WordPunctTokenizer,word_tokenize
+import sys
+
 import pandas as pd
 from itertools import chain
 
 from text_utils.encoding_padding_texts import encoding_padding
-from Helpers.util import get_mashup_api_pair,write_mashup_api_pair
+from Helpers.util import get_mashup_api_pair, write_mashup_api_pair, dict2list
 
 
 # 源数据：包含mashup/api的各种信息，和mashup-api调用关系列表
@@ -44,6 +46,7 @@ class meta_data(object):
         self.process()
         if not os.path.exists(self.statistics_path):
             self.statistics()
+        print('num of all apis:{},num of all mashups:{}'.format(self.api_num,self.mashup_num))
 
     def process(self):
         if not os.path.exists(self.processed_info_dir):
@@ -102,10 +105,11 @@ class meta_data(object):
         # 读取CSV文件到df并处理字段
         df = pd.read_csv(raw_data_path, encoding='unicode_escape')  # 'UTF-8'
         df['Name'] = df['Name'].map(lambda x: '-'.join(x.strip().lower().split() if x else ''), na_action='ignore')
-        # TODO: nltk等分词，否则.,等符号在单词后，分不开 df['Description'] = df['Description'].map(lambda x: nltk.word_tokenize(
-        #  x.strip().lower()) if x else '',na_action='ignore')
-        df['Description'] = df['Description'].map(lambda x: x.strip().lower().split() if x else '', na_action='ignore')
-        df['final_description'] = df['Description'].map(NLP_tool)
+        # Description 保持原始文本
+        # TODO: nltk等分词，否则.,等符号在单词后，分不开
+        #  df['Description'] = df['Description'].map(lambda x: nltk.word_tokenize(x.strip().lower()) if x else '',na_action='ignore')
+        df['final_description'] = df['Description'].map(lambda x: x.strip().lower().split() if x else '', na_action='ignore')
+        # df['final_description'] = df['final_description'].map(NLP_tool)
         df['Categories'] = df['Categories'].map(process_categories)
         if mashup_api == 'mashup':
             df['Related_APIs'] = df['Related_APIs'].map(process_Related_APIs)
@@ -129,10 +133,9 @@ class meta_data(object):
             mashup_df['valid_Related_APIs_length'] = mashup_df['valid_Related_APIs'].map(len)
             mashup_df = mashup_df[mashup_df['valid_Related_APIs_length'] >= min_api_count]
 
-        # 只保留非空且在mashup組件中出现过的服务 这么做,api只有几百，候选集太小，指标太高
-        # appeared_apis = set(list(chain(*mashup_df.Related_APIs.tolist())))
-        # useful_apis = not_na_apis.intersection(appeared_apis)
-        # api_df = api_df[api_df['Name'].isin(useful_apis)]
+        # 只保留非空且在mashup組件中出现过的服务 这么做,api几百;但如果不操作，api有2万多，测试时效率太低！
+        appeared_useful_apis = set(list(chain(*mashup_df.valid_Related_APIs.tolist())))
+        api_df = api_df[api_df['Name'].isin(appeared_useful_apis)]
 
         return mashup_df, api_df
 
@@ -142,17 +145,17 @@ class meta_data(object):
         mashup_df['id'] = range(1, len(mashup_df) + 1)
         api_df['id'] = range(1, len(api_df) + 1)
         api_name2id = {getattr(row, 'Name'): getattr(row, 'id') for row in api_df.itertuples()}
-        self.mashup_api_list = {
-            getattr(row, 'id'): [api_name2id[api_name] for api_name in getattr(row, 'valid_Related_APIs')] for row in
-            mashup_df.itertuples()}
+        self.mashup_api_list = dict2list({
+            getattr(row, 'id'): [api_name2id[api_name] for api_name in getattr(row, 'valid_Related_APIs')]
+            for row in mashup_df.itertuples()})
 
         api_df = api_df.append(
-            [{'Name': 'placeholder-api', 'id': 0, 'Categories': [], 'Description': [], 'final_description': []}])
+            [{'Name': 'placeholder-api', 'id': 0, 'Categories': [], 'Description': '', 'final_description': []}])
         mashup_df = mashup_df.append([{'Name': 'placeholder-mashup', 'id': 0, 'Related_APIs': [], 'Categories': [],
-                                       'Description': [], 'final_description': []}])
+                                       'Description': '', 'final_description': []}])
         self.mashup_df = mashup_df.set_index(['id'])
         self.api_df = api_df.set_index(['id'])
-        write_mashup_api_pair(self.mashup_api_list, self.mashup_api_list_path, 'dict')
+        write_mashup_api_pair(self.mashup_api_list, self.mashup_api_list_path, 'list')
         return self.mashup_df, self.api_df, self.mashup_api_list
 
     # def encode_all_texts_cates(self):
@@ -166,8 +169,8 @@ class meta_data(object):
 
     def encode_all_texts_cates(self):
         # 对于一个meta_data，对其文本和tag分别编码，返回编码结果(供CI使用，而baselines一般统一编码)
-        mashup_descriptions = self.mashup_df.final_description.tolist()  # [['word11','word12'],['word21','word22']...]
-        api_descriptions = self.api_df.final_description.tolist()
+        mashup_descriptions = self.mashup_df.Description.tolist()  # ['sentence1','sentence2'...]
+        api_descriptions = self.api_df.Description.tolist()
         descriptions = mashup_descriptions + api_descriptions
         self.des_pd = encoding_padding(descriptions, self.args, mode = 'text')
         # 结果严格按照mashup_df/api_df中的id顺序
@@ -177,8 +180,8 @@ class meta_data(object):
             self.mashup_df['padded_description'] = self.des_pd.get_texts_in_index(mashup_descriptions) # TODO []?
             self.api_df['padded_description'] = self.des_pd.get_texts_in_index(api_descriptions)
 
-        mashup_categories = self.mashup_df.Categories.tolist()  # [['cate11','cate12'],['cate21','cate22']...]
-        api_categories = self.api_df.Categories.tolist()
+        mashup_categories = self.mashup_df['Categories'].map(lambda tokens:' '.join(eval(tokens))).tolist()  # [['cate11','cate12'],['cate21','cate22']...]
+        api_categories = self.api_df['Categories'].map(lambda tokens:' '.join(eval(tokens))).tolist()
         categories = mashup_categories + api_categories
         self.cate_pd = encoding_padding(categories, self.args, mode = 'tag')
 

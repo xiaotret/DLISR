@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-from tensorflow.python.keras.preprocessing.text import Tokenizer
-from tensorflow.python.keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 class encoding_padding(object):
     """
@@ -23,6 +23,9 @@ class encoding_padding(object):
         print('Found %s texts.' % len(descriptions))
         filters= self.args.keras_filter_puncs if self.args.remove_punctuation else '' # 是否过滤标点
         self.tokenizer = Tokenizer(filters=filters, num_words=self.args.MAX_NUM_WORDS)  # 声明最大长度，默认使用词频***
+        for i,description in enumerate(descriptions): # 处理占位的空文档
+            if isinstance(description,float):
+                descriptions[i] = ''
         self.tokenizer.fit_on_texts(descriptions)
 
         # 字典：将单词（字符串）映射为索引
@@ -31,10 +34,10 @@ class encoding_padding(object):
 
         # 截断
         self.word2index = dict(filter(lambda x:x[1]<=self.args.MAX_NUM_WORDS,self.word2index.items()))
-        import json
-        jsObj = json.dumps(self.word2index)
-        with open('jsonFile.json', 'w') as f:
-            f.write(jsObj)
+        # import json
+        # jsObj = json.dumps(self.word2index)
+        # with open('jsonFile.json', 'w') as f:
+        #     f.write(jsObj)
 
         """
         with open('../data/word2index','w',encoding='utf-8') as f:
@@ -66,7 +69,7 @@ class encoding_padding(object):
             res = self.tokenizer.texts_to_sequences(texts)
             if padding:
                 res = pad_sequences(res, maxlen=self.max_len).tolist()
-            print(type(res))
+            # print(type(res))
             return res
 
         elif manner=='self_padding':

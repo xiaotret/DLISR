@@ -9,10 +9,10 @@ Reference:
 
 from collections import OrderedDict
 
-from tensorflow.python.keras.initializers import RandomNormal
-from tensorflow.python.keras.layers import Input, Dense, Embedding, Concatenate, Flatten
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras.initializers import RandomNormal
+from tensorflow.keras.layers import Input, Dense, Embedding, Concatenate, Flatten
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 
 from deepCTR.input_embedding import get_inputs_list, create_singlefeat_inputdict, get_embedding_vec_list
 from ..layers.core import DNN, PredictionLayer

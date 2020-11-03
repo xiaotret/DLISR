@@ -1,11 +1,11 @@
 # -*- coding:utf-8 -*-
 
 import tensorflow as tf
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.layers import Dense, Input, Conv2D, AveragePooling2D, Embedding, Activation, concatenate, \
+from tensorflow.keras import backend as K
+from tensorflow.keras.layers import Dense, Input, Conv2D, AveragePooling2D, Embedding, Activation, concatenate, \
     GlobalAveragePooling1D, GlobalMaxPooling1D, MaxPooling1D, MaxPooling2D, GlobalAveragePooling2D, GlobalMaxPooling2D
-from tensorflow.python.keras.layers import Dropout
-from tensorflow.python.keras.applications import inception_v3
+from tensorflow.keras.layers import Dropout
+from tensorflow.keras.applications import inception_v3
 
 channel_axis = 1 if K.image_data_format() == 'channels_first' else 3
 

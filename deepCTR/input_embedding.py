@@ -9,9 +9,9 @@ Author:
 from collections import OrderedDict
 from itertools import chain
 
-from tensorflow.python.keras.initializers import RandomNormal
-from tensorflow.python.keras.layers import Concatenate, Dense, Embedding, Input, Reshape, add
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras.initializers import RandomNormal
+from tensorflow.keras.layers import Concatenate, Dense, Embedding, Input, Reshape, add
+from tensorflow.keras.regularizers import l2
 
 from deepCTR.layers.sequence import SequencePoolingLayer
 from deepCTR.layers import Hash

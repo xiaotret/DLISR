@@ -9,9 +9,9 @@ Reference:
 """
 
 import tensorflow as tf
-from tensorflow.python.keras import Model
-from tensorflow.python.keras.layers import Lambda, AveragePooling2D, Reshape, AveragePooling1D,Input,Dense,Flatten
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras import Model
+from tensorflow.keras.layers import Lambda, AveragePooling2D, Reshape, AveragePooling1D,Input,Dense,Flatten
+from tensorflow.keras.regularizers import l2
 from deepCTR.input_embedding import preprocess_input_embedding, get_linear_logit
 from core.new_para_setting import new_Para
 from ..layers.core import PredictionLayer, DNN

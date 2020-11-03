@@ -1,8 +1,12 @@
 import tensorflow as tf
-from tensorflow.python.keras.initializers import Constant
-from tensorflow.python.keras.layers import Concatenate, MaxPooling2D, LSTM, Bidirectional
-from tensorflow.python.keras.layers import Input, Conv2D, Embedding
-from tensorflow.python.keras.models import Model
+from tensorflow.keras.initializers import Constant
+from tensorflow.keras.layers import Concatenate, MaxPooling2D, LSTM, Bidirectional
+from tensorflow.keras.layers import Input, Conv2D, Embedding
+from tensorflow.keras.models import Model
+
+
+def bert_extracter_from_texts():
+    pass
 
 
 def textCNN_feature_extracter_from_texts(embedded_sequences,args):
@@ -19,7 +23,7 @@ def textCNN_feature_extracter_from_texts(embedded_sequences,args):
     for index, filtersize in enumerate(filtersize_list):
         nb_filter = number_of_filters_per_filtersize[index]
         pool_length = pool_length_list[index]
-        conv = Conv2D(nb_filter=nb_filter, kernel_size=(filtersize, args.embedding_dim), activation='relu')(
+        conv = Conv2D(nb_filter, kernel_size=(filtersize, args.embedding_dim), activation='relu')(
             embedded_sequences)
         pool = MaxPooling2D(pool_size=(pool_length, 1))(conv)
         print('a feature map size:', pool)

@@ -99,9 +99,9 @@ def list2dict(train):
 
 def dict2list(train):
     _list=[]
-    for mashup,apis in train:
+    for mashup,apis in train.items():
         for api in apis:
-            _list.append(mashup,api)
+            _list.append((mashup,api))
     return _list
 
 

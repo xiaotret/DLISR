@@ -9,8 +9,8 @@ Author:
 import sys
 
 import tensorflow as tf
-from tensorflow.python.keras.initializers import Zeros
-from tensorflow.python.keras.layers import Layer
+from tensorflow.keras.initializers import Zeros
+from tensorflow.keras.layers import Layer
 
 
 class Dice(Layer):

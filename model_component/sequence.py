@@ -9,11 +9,11 @@ Author:
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.initializers import TruncatedNormal
-from tensorflow.python.keras.layers import LSTM, Lambda, Layer
-from tensorflow.python.keras.initializers import Zeros, glorot_normal
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras import backend as K
+from tensorflow.keras.initializers import TruncatedNormal
+from tensorflow.keras.layers import LSTM, Lambda, Layer
+from tensorflow.keras.initializers import Zeros, glorot_normal
+from tensorflow.keras.regularizers import l2
 
 from model_component.utils import reduce_sum, reduce_max, div, softmax, reduce_mean
 
@@ -173,8 +173,7 @@ class LocalActivationUnit(Layer):
         self.dnn = DNN(self.hidden_units, self.activation, self.l2_reg,
                        self.dropout_rate, self.use_bn, seed=self.seed)
 
-        self.dense = tf.keras.layers.Lambda(lambda x: tf.nn.bias_add(tf.tensordot(
-            x[0], x[1], axes=(-1, 0)), x[2]))
+        self.dense = Lambda(lambda x: tf.nn.bias_add(tf.tensordot(x[0], x[1], axes=(-1, 0)), x[2]))
 
         super(LocalActivationUnit, self).build(input_shape)  # Be sure to call this somewhere!
 

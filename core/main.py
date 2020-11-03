@@ -2,9 +2,19 @@ import pathlib
 import sys
 import os
 import argparse
+import tensorflow as tf
 
 project_path = str(pathlib.Path(os.path.abspath(__file__)).parent.parent)
 sys.path.append(project_path)
+
+# 使用多个gpu时，报错：E tensorflow/stream_executor/cuda/cuda_dnn.cc:329] Could not create cudnn handle: CUDNN_STATUS_INTERNAL_ERROR
+# 问题出在RTX2070/2080显卡的显存分配问题上，将 GPU 的显存使用策略设置为 “仅在需要时申请显存空间”
+# gpus= tf.config.list_physical_devices('GPU')
+# print(gpus)
+# tf.config.experimental.set_memory_growth(device=gpus[-1], enable=True)
+# 但还是有问题，改为只使用一个gpu!
+# https://github.com/tensorflow/tensorflow/issues/24496#
+# 可以用os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 from core.path_config import new_data_dir,old_data_dir
 from core import data_repository
@@ -12,7 +22,7 @@ from core.process_raw_data import meta_data
 from core.split_data import KCV_dataset_generater
 from core.dataset import dataset
 # from core.run_models import baselines, CI_NI_fineTuning
-from run_models import CI_NI_fineTuning
+from core.run_models import CI_NI_fineTuning
 
 
 punctuations = '!"#$%&()*+,-./:;<=>?@[\]^_`{|}~\t\n' # '[<>/\s+\.\!\/_,;:$%^*(+\"\')]+|[+——()?【】“”！，。？、~@#￥%……&*（）]+'
@@ -27,6 +37,7 @@ parser.add_argument("--keras_filter_puncs", type=str, default=punctuations, help
 parser.add_argument("--embedding_name", type=str, default='glove', help="word embedding type")
 parser.add_argument("--embedding_dim", type=int, default=50, help="word embedding dim")
 parser.add_argument("--MAX_SEQUENCE_LENGTH", type=int, default=100, help="最大文本长度")
+parser.add_argument("--MAX_BERT_SEQUENCE_LENGTH", type=int, default=150, help="最大文本长度")
 parser.add_argument("--MAX_TAGS_NUM", type=int, default=20, help="最大tag长度")
 parser.add_argument("--MAX_NUM_WORDS", type=int, default=40000, help="最大词典大小")
 # parser.add_argument("--Category_type", type=str, default='all', choices=['all', 'first', 'second'],
@@ -36,7 +47,7 @@ parser.add_argument("--MAX_NUM_WORDS", type=int, default=40000, help="最大词�
 parser.add_argument("--which_data", type=str, default='new',help="使用哪个数据集")
 parser.add_argument("--cur_data_dir", type=str, default='',help="当前使用数据目录")
 parser.add_argument("--data_mode", type=str, default='newScene', choices=['newScene', 'oldScene'],help="模型针对的数据场景") # 新场景就是多种已选服务的组合
-parser.add_argument("--need_slt_apis", type=bool, default=True, help="样本中是否需要已选择服务") # 新数据也可以用在旧模型中，只需要设为false即可
+parser.add_argument("--need_slt_apis", type=bool, default=True, help="样本中是否需要已选择服务") # 新数据也可以用在旧模型中，只需要设为false即可***
 parser.add_argument("--num_negatives", type=int, default=12, help="负样本-正样本比例")
 # -- 新场景数据集使用
 parser.add_argument("--slt_item_num", type=int, default=3, help="已选服务组合的最大的size")
@@ -47,7 +58,7 @@ parser.add_argument("--test_candidates_nums", type=str, default='all', help="待
 # 2.Model
 # -CI
 # --文本特征提取
-parser.add_argument("--text_extracter_mode", type=str, default='inception', choices=['inception', 'LSTM', 'textCNN'],
+parser.add_argument("--text_extracter_mode", type=str, default='inception', choices=['inception', 'LSTM', 'textCNN','bert'],
                     help="文本特征提取器")
 parser.add_argument("--inception_channels", type=list, default=[10, 10, 10, 20, 10], help="inception中各种通道数")
 parser.add_argument("--inception_pooling", type=str, default='global_avg',choices=['global_max', 'max', 'global_avg', 'none'])
@@ -57,6 +68,7 @@ parser.add_argument("--inception_MLP_dropout", type=bool, default=True, help="te
 parser.add_argument("--inception_MLP_BN", type=bool, default=False, help="textCNN中各种通道数")
 parser.add_argument("--textCNN_channels", type=list, default=[20, 20, 20], help="textCNN中各种通道数")
 parser.add_argument("--LSTM_dim", type=int, default=25, help="LSTM unit num")
+parser.add_argument("--frozen_bert", type=bool, default=True, help="是否冻住BERT")
 
 # --整合text和category的特征
 parser.add_argument("--merge_manner", type=str, default='direct_merge', choices=['direct_merge', 'final_merge'],
@@ -116,6 +128,7 @@ parser.add_argument("--topMLP_learning_rate", type=float, default=0.0001, help="
 parser.add_argument("--l2_reg", type=float, default=0, help="MLP L2")
 parser.add_argument("--num_epochs", type=int, default=1, help="训练轮数")
 parser.add_argument("--batch_size", type=int, default=64, help="batch_size")
+parser.add_argument("--test_batch_size", type=int, default=64, help="test batch_size")
 parser.add_argument("--validation_split", type=float, default=0.2, help="训练集验证集比例")
 parser.add_argument("--train_name", type=str, default=None)
 parser.add_argument("--kcv", type=int, default=5, help="交叉验证折数")
@@ -142,6 +155,10 @@ args.simple_NI_slt_mode = 'nul' if not args.NI_handle_slt_apis_mode else args.NI
 args.cur_data_dir = new_data_dir if args.which_data == 'new' else old_data_dir # 新旧数据集***
 args.train_name = '_TRAIN:{}_need_slt_apis:{}_l2:{}'.format(args.train_mode, args.need_slt_apis,args.l2_reg)
 
+# args.text_extracter_mode = 'bert' # 实验 bert
+# args.batch_size = 8 # 一般64，但BERT要使用小batch size!
+# args.test_batch_size = 16
+# args.frozen_bert = True
 data_repository.set_args(args)
 
 
@@ -150,10 +167,10 @@ data_repository.set_args(args)
 data_repository.set_md(args)
 
 
-# index = 0
-# for a_dataset in KCV_dataset_generater(args): # 划分数据集
-#     print('getting the {}th kcv...'.format(index))
-#     index += 1
+index = 0
+for a_dataset in KCV_dataset_generater(args): # 划分数据集
+    print('getting the {}th kcv...'.format(index))
+    index += 1
 
 start_index,end_index = 0,0
 index = 0
@@ -173,6 +190,7 @@ for a_dataset in KCV_dataset_generater(args):
     # bl_DHSR()
     # bl_DHSR_new(a_dataset)
     # text_tag()
+
     CI_NI_fineTuning()
 
     # NI_online() # 最新的模型

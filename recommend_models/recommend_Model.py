@@ -4,13 +4,13 @@ from Helpers.cpt_DHSR_Sim import get_sims_dict
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.layers import Concatenate
-from tensorflow.python.keras.layers import Dense, Input, Embedding, concatenate, Multiply
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.regularizers import l2
-from tensorflow.python.keras import initializers
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.keras.layers import Concatenate
+from tensorflow.keras.layers import Dense, Input, Embedding, concatenate, Multiply
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras import initializers
+from tensorflow.keras import backend as K
+from tensorflow.keras.optimizers import Adam
 
 
 class recommend_Model(object):

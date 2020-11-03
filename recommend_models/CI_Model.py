@@ -16,14 +16,15 @@ from text_utils.word_embedding import get_embedding_matrix
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.layers import Lambda, Concatenate, PReLU, BatchNormalization
-from tensorflow.python.keras.layers import Dense, Input, Embedding, Multiply,Reshape
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.regularizers import l2
-from tensorflow.python.keras.initializers import Constant
-from tensorflow.python.keras import regularizers
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.optimizers import Adam
+from tensorflow.keras.layers import Lambda, Concatenate, PReLU, BatchNormalization
+from tensorflow.keras.layers import Dense, Input, Embedding, Multiply,Reshape
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.initializers import Constant
+from tensorflow.keras import regularizers
+from tensorflow.keras import backend as K
+from tensorflow.keras.optimizers import Adam
+from transformers import DistilBertTokenizer, TFDistilBertModel
 
 
 def slice(x, index):  # 三维的切片
@@ -60,6 +61,10 @@ class CI_Model (recommend_Model):
                 text_extracter_setting = 'DIM_{}'.format(self.args.LSTM_dim)
             elif self.args.text_extracter_mode == 'textCNN':
                 text_extracter_setting = 'CHA_{}'.format(str(self.args.textCNN_channels)).replace(',', '_')
+            elif 'bert' in self.args.text_extracter_mode.lower():
+                text_extracter_setting = '' # 后续加setting
+            else:
+                raise TypeError('wrong text_extracter_mode!')
 
             # mode:('CI', 'LR_PNCF')
             self.simple_name = '{}_{}_{}_{}_LR_{}_{}'.format(self.args.model_mode,self.args.text_extracter_mode,text_extracter_setting,
@@ -80,34 +85,58 @@ class CI_Model (recommend_Model):
     def set_text_tag_enconding_layers(self):
         # 根据meta-data得到的文本和tag的编码表示，设置编码层
         all_mashup_num = data_repository.get_md().mashup_num
-        mid2encoded_text = data_repository.get_md().mashup_df['padded_description'].tolist()
-        mid2encoded_text = list(map(eval,mid2encoded_text))
-        self.mashup_text_encoding_layer = Embedding(all_mashup_num+1, self.args.MAX_SEQUENCE_LENGTH,
+        all_api_num = data_repository.get_md().api_num
+
+        if 'bert' in self.args.text_extracter_mode.lower():
+            tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
+
+            def encode(text):  # 利用DistilBertTokenizer编码
+                encoded_text = tokenizer.encode(text, add_special_tokens=True,truncation=True,
+                                                padding ='max_length',max_length = self.args.MAX_BERT_SEQUENCE_LENGTH)
+                return encoded_text
+
+            mid2encoded_text = data_repository.get_md().mashup_df['Description'].tolist()
+            mid2encoded_text[-1] = '' # ''会转化为nan，每次用之前要转化! TODO
+            mid2encoded_text = np.array([encode(text) for text in mid2encoded_text])
+            aid2encoded_text = data_repository.get_md().api_df['Description'].tolist()
+            aid2encoded_text[-1] = ''
+            aid2encoded_text = np.array([encode(text) for text in aid2encoded_text])
+        else:
+            mid2encoded_text = data_repository.get_md().mashup_df['padded_description'].tolist()
+            if isinstance(mid2encoded_text[0], str):  # TODO
+                mid2encoded_text = list(map(eval,mid2encoded_text))
+            aid2encoded_text = data_repository.get_md().api_df['padded_description'].tolist()
+            if isinstance(aid2encoded_text[0], str):  # TODO
+                aid2encoded_text = list(map(eval,aid2encoded_text))
+
+        MAX_LENGTH = self.args.MAX_BERT_SEQUENCE_LENGTH if 'bert' in self.args.text_extracter_mode.lower() else self.args.MAX_SEQUENCE_LENGTH
+        self.mashup_text_encoding_layer = Embedding(all_mashup_num+1, MAX_LENGTH,
                                              embeddings_initializer=Constant(mid2encoded_text),
                                              mask_zero=True, input_length=1,
                                              trainable=False, name='mashup_text_encoding_layer')
 
-        all_api_num = data_repository.get_md().api_num
-        aid2encoded_text = data_repository.get_md().api_df['padded_description'].tolist()
-        aid2encoded_text = list(map(eval,aid2encoded_text))
-        self.api_text_encoding_layer = Embedding(all_api_num+1, self.args.MAX_SEQUENCE_LENGTH,
+
+        self.api_text_encoding_layer = Embedding(all_api_num+1, MAX_LENGTH,
                                              embeddings_initializer=Constant(aid2encoded_text),
                                              mask_zero=True, input_length=1,
                                              trainable=False, name='api_text_encoding_layer')
 
         mid2encoded_tags = data_repository.get_md().mashup_df['padded_categories'].tolist()
-        mid2encoded_tags = list(map(eval,mid2encoded_tags))
+        if isinstance(mid2encoded_tags[0],str): # TODO
+            mid2encoded_tags = list(map(eval,mid2encoded_tags))
         self.mashup_tag_encoding_layer = Embedding(all_mashup_num+1, self.args.MAX_TAGS_NUM,
                                             embeddings_initializer=Constant(mid2encoded_tags),
                                             mask_zero=True, input_length=1,
                                             trainable=False, name='mashup_tag_encoding_layer')
 
         aid2encoded_tags = data_repository.get_md().api_df['padded_categories'].tolist()
-        aid2encoded_tags = list(map(eval,aid2encoded_tags))
+        if isinstance(aid2encoded_tags[0], str):
+            aid2encoded_tags = list(map(eval,aid2encoded_tags))
         self.api_tag_encoding_layer = Embedding(all_api_num+1, self.args.MAX_TAGS_NUM,
                                             embeddings_initializer=Constant(aid2encoded_tags),
                                             mask_zero=True, input_length=1,
                                             trainable=False, name='api_tag_encoding_layer')
+        return
 
 
     def get_text_embedding_layer(self):
@@ -117,9 +146,6 @@ class CI_Model (recommend_Model):
         if self.text_embedding_layer is None:
             # 得到词典中每个词对应的embedding
             num_words = min(self.args.MAX_NUM_WORDS, len(data_repository.get_md().des_pd.word2index))+ 1  # 实际词典大小 +1  因为0代表0的填充向量
-            temp = data_repository.get_md().des_pd.word2index
-
-
             self.text_embedding_matrix = get_embedding_matrix(data_repository.get_md().des_pd.word2index, self.args.embedding_name,
                                                               dimension=self.args.embedding_dim)
             print('built embedding matrix, done!')
@@ -158,7 +184,7 @@ class CI_Model (recommend_Model):
         """
         对mashup，service的description均需要提取特征，右路的文本的整个特征提取过程
         公用的话应该封装成新的model！
-        :param x:
+        :param mashup_api: 默认是None，只有'HDP'时为非空
         :return: 输出的是一个封装好的model，所以可以被mashup和api公用
         """
         if self.args.text_extracter_mode=='HDP' and mashup_api is not None:
@@ -174,36 +200,43 @@ class CI_Model (recommend_Model):
                 if self.api_text_feature_extracter is None:
                     self.api_text_feature_extracter = HDP_feature_extracter_from_texts('api',self.gd.api_features)
                 return self.api_text_feature_extracter
+            else:
+                raise TypeError('wrong mashup_api mode!')
 
         if self.text_feature_extracter is None: # 没求过
-            text_input = Input(shape=(self.args.MAX_SEQUENCE_LENGTH,), dtype='int32')
-            text_embedding_layer = self.get_text_embedding_layer()  # 参数还需设为外部输入！
-            text_embedded_sequences = text_embedding_layer(text_input)  # 转化为2D
-
-            if self.args.text_extracter_mode in ('inception','textCNN'): # 2D转3D,第三维是channel
-                # print(text_embedded_sequences.shape)
-                text_embedded_sequences = Lambda(lambda x: tf.expand_dims(x, axis=3))(text_embedded_sequences)  # tf 和 keras的tensor 不同！！！
-                print(text_embedded_sequences.shape)
-
-            if self.args.text_extracter_mode=='inception':
-                x = inception_layer(text_embedded_sequences, self.args.embedding_dim, self.args.inception_channels, self.args.inception_pooling)  # inception处理
-                print('built inception layer, done!')
-            elif self.args.text_extracter_mode=='textCNN':
-                x = textCNN_feature_extracter_from_texts(text_embedded_sequences)
-            elif self.args.text_extracter_mode=='LSTM':
-                x = LSTM_feature_extracter_from_texts(text_embedded_sequences)
+            if 'bert' in self.args.text_extracter_mode.lower():
+                self.text_feature_extracter = TFDistilBertModel.from_pretrained("distilbert-base-uncased")  # layer
+                if self.args.frozen_bert:
+                    self.text_feature_extracter.trainable = False
             else:
-                raise TypeError('wrong extracter!')
-            print('text feature after inception/textCNN/LSTM whole_model,',x) # 观察MLP转化前，模块输出的特征
+                text_input = Input(shape=(self.args.MAX_SEQUENCE_LENGTH,), dtype='int32')
+                text_embedding_layer = self.get_text_embedding_layer()  # 参数还需设为外部输入！
+                text_embedded_sequences = text_embedding_layer(text_input)  # 转化为2D
 
-            for FC_unit_num in self.args.inception_fc_unit_nums:
-                x = Dense(FC_unit_num, kernel_regularizer=l2(self.args.l2_reg))(x)  # , activation='relu'
-                if self.args.inception_MLP_BN:
-                    x = BatchNormalization(scale=False)(x)
-                x = PReLU()(x)  #
-                if self.args.inception_MLP_dropout:
-                    x = tf.keras.layers.Dropout(0.5)(x)
-            self.text_feature_extracter=Model(text_input, x,name='text_feature_extracter')
+                if self.args.text_extracter_mode in ('inception','textCNN'): # 2D转3D,第三维是channel
+                    # print(text_embedded_sequences.shape)
+                    text_embedded_sequences = Lambda(lambda x: tf.expand_dims(x, axis=3))(text_embedded_sequences)  # tf 和 keras的tensor 不同！！！
+                    print(text_embedded_sequences.shape)
+
+                if self.args.text_extracter_mode=='inception':
+                    x = inception_layer(text_embedded_sequences, self.args.embedding_dim, self.args.inception_channels, self.args.inception_pooling)  # inception处理
+                    print('built inception layer, done!')
+                elif self.args.text_extracter_mode=='textCNN':
+                    x = textCNN_feature_extracter_from_texts(text_embedded_sequences,self.args)
+                elif self.args.text_extracter_mode=='LSTM':
+                    x = LSTM_feature_extracter_from_texts(text_embedded_sequences,self.args)
+                else:
+                    raise TypeError('wrong extracter!')
+                print('text feature after inception/textCNN/LSTM whole_model,',x) # 观察MLP转化前，模块输出的特征
+
+                for FC_unit_num in self.args.inception_fc_unit_nums:
+                    x = Dense(FC_unit_num, kernel_regularizer=l2(self.args.l2_reg))(x)  # , activation='relu'
+                    if self.args.inception_MLP_BN:
+                        x = BatchNormalization(scale=False)(x)
+                    x = PReLU()(x)  #
+                    if self.args.inception_MLP_dropout:
+                        x = tf.keras.layers.Dropout(0.5)(x)
+                self.text_feature_extracter=Model(text_input, x,name='text_feature_extracter')
         return self.text_feature_extracter
 
     def user_text_feature_extractor(self):
@@ -212,6 +245,8 @@ class CI_Model (recommend_Model):
             mashup_text = self.mashup_text_encoding_layer(user_id_input)
             user_text_input = Lambda(lambda x: tf.cast(tf.squeeze(x, axis=1), 'int32'))(mashup_text)
             user_text_vec = self.feature_extracter_from_texts()(user_text_input) # (?,50)
+            if 'bert' in self.args.text_extracter_mode.lower() and len(user_text_vec[0].shape) == 3:
+                user_text_vec = user_text_vec[0][:,0,:]
             self.mashup_text_feature_extracter = Model(user_id_input, user_text_vec, name='user_text_feature_extracter')
         return self.mashup_text_feature_extracter
 
@@ -221,6 +256,8 @@ class CI_Model (recommend_Model):
             item_id_input = Input(shape=(1,), dtype='int32') # , name='api_id_input'
             item_text_input = Lambda(lambda x: tf.cast(tf.squeeze(x, axis=1), 'int32'))(self.api_text_encoding_layer(item_id_input))
             item_text_vec = self.feature_extracter_from_texts()(item_text_input) # (?,50)
+            if 'bert' in self.args.text_extracter_mode.lower() and len(item_text_vec[0].shape) == 3:
+                item_text_vec = item_text_vec[0][:,0,:]
             self.api_text_feature_extracter = Model(item_id_input, item_text_vec, name='item_text_feature_extracter')
         return self.api_text_feature_extracter
 
@@ -283,8 +320,10 @@ class CI_Model (recommend_Model):
 
                 if self.args.CI_handle_slt_apis_mode in ('attention','average') :
                     # text和tag使用各自的attention block
-                    slt_text_vec_list = [Reshape((1, self.args.embedding_dim))(key_2D) for key_2D in slt_text_vec_list]
-                    slt_tag_vec_list = [Reshape((1, self.args.embedding_dim))(key_2D) for key_2D in slt_tag_vec_list]  # 增加了一维  eg:[None,50]->[None,1,50]
+                    text_dim = slt_text_vec_list[0].shape[-1]
+                    tag_dim = slt_tag_vec_list[0].shape[-1]
+                    slt_text_vec_list = [Reshape((1, text_dim))(key_2D) for key_2D in slt_text_vec_list]
+                    slt_tag_vec_list = [Reshape((1, tag_dim))(key_2D) for key_2D in slt_tag_vec_list]  # 增加了一维  eg:[None,50]->[None,1,50]
                     text_keys_embs = Concatenate(axis=1)(slt_text_vec_list)  # [?,3,50]
                     tag_keys_embs = Concatenate(axis=1)(slt_tag_vec_list)  # [?,3,50]
 

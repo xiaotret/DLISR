@@ -1,15 +1,15 @@
 import os
 import sys
 
-from recommend_Model import recommend_Model
+from recommend_models.recommend_Model import recommend_Model
 from model_component.attention_block import new_attention_3d_block
 from recommend_models.midMLP_model import get_midMLP_feature
 
 import tensorflow as tf
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.layers import Input, Concatenate, Dense, Dropout, Lambda, AveragePooling2D, Reshape
-from tensorflow.python.keras.optimizers import Adam, SGD
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Concatenate, Dense, Dropout, Lambda, AveragePooling2D, Reshape
+from tensorflow.keras.optimizers import Adam, SGD
+from tensorflow.keras.regularizers import l2
 import numpy as np
 
 

@@ -1,6 +1,6 @@
 import os
 import pickle
-from tensorflow.python.keras.models import Model
+from tensorflow.keras.models import Model
 
 
 class get_midMLP_feature(object):

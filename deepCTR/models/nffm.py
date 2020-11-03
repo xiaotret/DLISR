@@ -11,12 +11,12 @@ Reference:
 import itertools
 
 import tensorflow as tf
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.initializers import RandomNormal
-from tensorflow.python.keras.layers import (Dense, Embedding, Lambda, add,
+from tensorflow.keras import backend as K
+from tensorflow.keras.initializers import RandomNormal
+from tensorflow.keras.layers import (Dense, Embedding, Lambda, add,
                                             multiply)
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.regularizers import l2
+from tensorflow.keras.models import Model
+from tensorflow.keras.regularizers import l2
 
 from deepCTR.input_embedding import (create_singlefeat_inputdict,
                                      get_embedding_vec_list, get_inputs_list,

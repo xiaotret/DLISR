@@ -9,12 +9,12 @@ from recommend_models.recommend_Model import recommend_Model
 
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.optimizers import Adam
-from tensorflow.python.keras.regularizers import l2
-from tensorflow.python.keras.layers import Dense, Input, Concatenate, Embedding, Lambda, Reshape
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.initializers import Constant
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras.layers import Dense, Input, Concatenate, Embedding, Lambda, Reshape
+from tensorflow.keras.models import Model
+from tensorflow.keras import backend as K
+from tensorflow.keras.initializers import Constant
 
 
 # 针对新场景，在内容交互的基础上搭建新的完整模型:

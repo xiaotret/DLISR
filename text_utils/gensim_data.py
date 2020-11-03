@@ -5,7 +5,7 @@ import numpy as np
 
 from core.dataset import dataset
 from core import data_repository
-from util import get_iterable_values
+from Helpers.util import get_iterable_values
 
 
 class gensim_data(object):

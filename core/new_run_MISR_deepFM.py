@@ -3,13 +3,13 @@ import sys
 sys.path.append("..")
 
 import numpy as np
-from tensorflow.python.keras.utils import to_categorical
+from tensorflow.keras.utils import to_categorical
 from core.evalute import evalute, summary
 from core.new_para_setting import new_Para
 from deepCTR.models import simple_DeepFM
 import tensorflow as tf
-from tensorflow.python.keras.backend import set_session
-from tensorflow.python.keras.models import load_model
+from tensorflow.keras.backend import set_session
+from tensorflow.keras.models import load_model
 
 def getNum_testData(test_data):
     # 获得测试样例的个数
