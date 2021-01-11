@@ -7,10 +7,12 @@ from numpy.linalg import linalg
 from pandas import DataFrame
 
 
-def get_iterable_values(df:DataFrame,col:str):
+def get_iterable_values(df:DataFrame,col:str,return_ele_type='list'):
     res = df[col].tolist()
     if isinstance(res[0],str):
         res = list(map(eval,res))
+    if return_ele_type == 'str':
+        res = list(map(lambda list_:' '.join(list_),res))
     return res
 
 

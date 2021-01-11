@@ -6,12 +6,12 @@ from core import data_repository
 from recommend_models.recommend_Model import recommend_Model
 from model_component.sequence import SequencePoolingLayer, AttentionSequencePoolingLayer, DNN
 from model_component.simple_inception import inception_layer
-from model_component.text_feature_extractors import HDP_feature_extracter_from_texts, \
-    textCNN_feature_extracter_from_texts, LSTM_feature_extracter_from_texts
+from model_component.text_feature_extractors import vector_feature_extracter_from_texts, \
+    textCNN_feature_extracter_from_texts, LSTM_feature_extracter_from_texts, fixed_vector_modes
 from model_component.utils import NoMask
 from text_utils.gensim_data import get_default_gd
 # from run_deepCTR.run_MISR_deepFM import transfer_testData2
-from Helpers.util import save_2D_list
+from Helpers.util import save_2D_list, get_iterable_values
 from text_utils.word_embedding import get_embedding_matrix
 
 import numpy as np
@@ -24,7 +24,7 @@ from tensorflow.keras.initializers import Constant
 from tensorflow.keras import regularizers
 from tensorflow.keras import backend as K
 from tensorflow.keras.optimizers import Adam
-from transformers import DistilBertTokenizer, TFDistilBertModel
+from transformers import DistilBertTokenizer, TFDistilBertModel, BertModel,BertTokenizer
 
 
 def slice(x, index):  # 三维的切片
@@ -184,27 +184,50 @@ class CI_Model (recommend_Model):
         """
         对mashup，service的description均需要提取特征，右路的文本的整个特征提取过程
         公用的话应该封装成新的model！
-        :param mashup_api: 默认是None，只有'HDP'时为非空
+        :param mashup_api: 默认是None，只有'HDP'/'Bert'时为非空
         :return: 输出的是一个封装好的model，所以可以被mashup和api公用
         """
-        if self.args.text_extracter_mode=='HDP' and mashup_api is not None:
-            if self.gd is None:
-                self.gd = get_default_gd(tag_times=1, mashup_only=False, strict_train=True)  # 用gensim处理文本,文本中不加tag
-                self.gd.model_pcs(self.args.text_extracter_mode)  #
+        if self.args.text_extracter_mode in fixed_vector_modes and mashup_api is not None:
 
-            if mashup_api == 'mashup':
-                if self.mashup_text_feature_extracter is None: # 没求过
-                    self.mashup_text_feature_extracter = HDP_feature_extracter_from_texts('mashup',self.gd.mashup_features)
-                return self.mashup_text_feature_extracter
-            elif mashup_api == 'api':
-                if self.api_text_feature_extracter is None:
-                    self.api_text_feature_extracter = HDP_feature_extracter_from_texts('api',self.gd.api_features)
-                return self.api_text_feature_extracter
+            if self.args.text_extracter_mode == 'Bert':
+                tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+                bertModel = BertModel.from_pretrained("bert-base-uncased")
+
+                if mashup_api == 'mashup':
+                    if self.mashup_text_feature_extracter is None: # 没求过
+                        mashup_texts = get_iterable_values(data_repository.get_md().mashup_df,'final_description',
+                                                           return_ele_type='str')
+                        dense_mashup_features = bertModel(tokenizer(mashup_texts, return_tensors='tf'))
+                        self.mashup_text_feature_extracter = vector_feature_extracter_from_texts('mashup', dense_mashup_features)
+                    return self.mashup_text_feature_extracter
+                elif mashup_api == 'api':
+                    if self.api_text_feature_extracter is None:
+                        api_texts = get_iterable_values(data_repository.get_md().api_df,'final_description',
+                                                           return_ele_type='str')
+                        dense_api_features = bertModel(tokenizer(api_texts, return_tensors='tf'))
+                        self.api_text_feature_extracter = vector_feature_extracter_from_texts('api', dense_api_features)
+                    return self.api_text_feature_extracter
+                else:
+                    raise TypeError('wrong mashup_api mode!')
+
             else:
-                raise TypeError('wrong mashup_api mode!')
+                if self.gd is None:
+                    self.gd = get_default_gd(tag_times=0, mashup_only=False, strict_train=True)  # 用gensim处理文本,文本中不加tag
+                    self.gd.model_pcs(self.args.text_extracter_mode)  #
 
-        if self.text_feature_extracter is None: # 没求过
-            if 'bert' in self.args.text_extracter_mode.lower():
+                if mashup_api == 'mashup':
+                    if self.mashup_text_feature_extracter is None: # 没求过
+                        self.mashup_text_feature_extracter = vector_feature_extracter_from_texts('mashup', self.gd.dense_mashup_features)
+                    return self.mashup_text_feature_extracter
+                elif mashup_api == 'api':
+                    if self.api_text_feature_extracter is None:
+                        self.api_text_feature_extracter = vector_feature_extracter_from_texts('api', self.gd.dense_api_features)
+                    return self.api_text_feature_extracter
+                else:
+                    raise TypeError('wrong mashup_api mode!')
+
+        elif self.text_feature_extracter is None: # 没求过
+            if 'trainable_bert' in self.args.text_extracter_mode.lower():
                 self.text_feature_extracter = TFDistilBertModel.from_pretrained("distilbert-base-uncased")  # layer
                 if self.args.frozen_bert:
                     self.text_feature_extracter.trainable = False

@@ -187,10 +187,10 @@ class HINRec(object):
             predictions = [self.predict_an_instance(m_ids[i], a_ids[i], slt_apis_lists[i],if_score_only = True) for i in range(num)]
         return np.array(predictions)
 
-    def get_instances(self,mashup_id_instances, api_id_instances, slt_api_ids_instances=None):
+    def get_instances(self,instances_dict):
         # 不需要array，不需要填充，输出结果可以使用predict就好;
         # 供evalute_by_epoch使用
-        return mashup_id_instances, api_id_instances, slt_api_ids_instances
+        return instances_dict.get('mashup'), instances_dict.get('api'), instances_dict.get('slt_apis',None)
 
     def train(self,test_data):
         """

@@ -21,7 +21,7 @@ class gensim_data(object):
         self.num_topics = 0
         self.model = None  # 处理文本的模型
         self.mashup_features,self.api_features = None,None # 使用模型处理文本得到稀疏特征向量
-        self._mashup_features,self._api_features = None,None  # 处理后的密集特征向量
+        self.dense_mashup_features, self.dense_api_features = None, None  # 处理后的密集特征向量
         self.mashup_topics,self.api_topics = None,None  # 文本最高的N个topic
 
         def initialize():
@@ -129,15 +129,15 @@ class gensim_data(object):
         # *** 由于mashup_dow和api_dow默认是全部mashup/api的文本，所以得到的特征列表用全局性的id索引即可 ***
         self.mashup_features = [self.model[mashup_info] for mashup_info in self.mashup_dow]  # 每个mashup和api的feature
         self.api_features = [self.model[api_info] for api_info in self.api_dow]
-        self._mashup_features = np.zeros((data_repository.get_md().mashup_num, self.num_topics))
-        self._api_features = np.zeros((data_repository.get_md().api_num, self.num_topics))
+        self.dense_mashup_features = np.zeros((data_repository.get_md().mashup_num, self.num_topics))
+        self.dense_api_features = np.zeros((data_repository.get_md().api_num, self.num_topics))
         for i in range(data_repository.get_md().mashup_num):  # 部分维度有值，需要转化成规范array
             for index, value in self.mashup_features[i]:
-                self._mashup_features[i][index] = value
+                self.dense_mashup_features[i][index] = value
         for i in range(data_repository.get_md().api_num):
             for index, value in self.api_features[i]:
-                self._api_features[i][index] = value
-        return self._mashup_features, self._api_features
+                self.dense_api_features[i][index] = value
+        return self.dense_mashup_features, self.dense_api_features
 
     def get_topTopics(self, topTopicNum=3):  # 选取概率最高的topK个主题 [(),(),...]
         mashup_topics = []

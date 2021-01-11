@@ -64,9 +64,9 @@ def evalute_by_epoch(recommend_model, model, model_name, test_data, show_cases=0
                     batch_instances_dict['slt_apis'] = _slt_ids * (stop_index - start_index)
 
                 batch_instances_dict = recommend_model.get_instances(batch_instances_dict)
-                batch_prediction = model.predict(batch_instances_dict, verbose=0)
+                batch_prediction = model.predict(batch_instances_dict)
 
-                if data_repository.get_args().final_activation == 'softmax':
+                if len(batch_prediction.shape) == 2:
                     batch_prediction = batch_prediction[:, 1]  # 1:[0,1]
                 batch_prediction = list(batch_prediction)
                 prediction += batch_prediction  # 一个mashup对所有候选的评分

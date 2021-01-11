@@ -14,7 +14,7 @@ sys.path.append(project_path)
 # tf.config.experimental.set_memory_growth(device=gpus[-1], enable=True)
 # 但还是有问题，改为只使用一个gpu!
 # https://github.com/tensorflow/tensorflow/issues/24496#
-# 可以用os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 from core.path_config import new_data_dir,old_data_dir
 from core import data_repository
@@ -22,8 +22,7 @@ from core.process_raw_data import meta_data
 from core.split_data import KCV_dataset_generater
 from core.dataset import dataset
 # from core.run_models import baselines, CI_NI_fineTuning
-from core.run_models import CI_NI_fineTuning
-
+from core.run_models import CI_NI_fineTuning, bl_PasRec
 
 punctuations = '!"#$%&()*+,-./:;<=>?@[\]^_`{|}~\t\n' # '[<>/\s+\.\!\/_,;:$%^*(+\"\')]+|[+——()?【】“”！，。？、~@#￥%……&*（）]+'
 stop_words = set(['!"#$%&()*+,-./:;<=>?@[\]^_`{|}~'])
@@ -126,7 +125,7 @@ parser.add_argument("--CI_learning_rate", type=float, default=0.0003, help="CI�
 parser.add_argument("--NI_learning_rate", type=float, default=0.0003, help="NI学习率")
 parser.add_argument("--topMLP_learning_rate", type=float, default=0.0001, help="topMLP学习率")
 parser.add_argument("--l2_reg", type=float, default=0, help="MLP L2")
-parser.add_argument("--num_epochs", type=int, default=1, help="训练轮数")
+parser.add_argument("--num_epochs", type=int, default=10, help="训练轮数")
 parser.add_argument("--batch_size", type=int, default=64, help="batch_size")
 parser.add_argument("--test_batch_size", type=int, default=64, help="test batch_size")
 parser.add_argument("--validation_split", type=float, default=0.2, help="训练集验证集比例")
@@ -172,7 +171,7 @@ for a_dataset in KCV_dataset_generater(args): # 划分数据集
     print('getting the {}th kcv...'.format(index))
     index += 1
 
-start_index,end_index = 0,0
+start_index,end_index = 0,4
 index = 0
 for a_dataset in KCV_dataset_generater(args):
     print('kcv:{}'.format(index))
@@ -191,7 +190,7 @@ for a_dataset in KCV_dataset_generater(args):
     # bl_DHSR_new(a_dataset)
     # text_tag()
 
-    CI_NI_fineTuning()
+    # CI_NI_fineTuning()
 
     # NI_online() # 最新的模型
     # co_trainCINI()
@@ -199,7 +198,7 @@ for a_dataset in KCV_dataset_generater(args):
 
     # bl_IsRec()
     # bl_IsRec_best(a_dataset)
-    # bl_PasRec(a_dataset)
+    bl_PasRec()
     # deepFM()
     # newDeepFM() # 效果很差
     # test()

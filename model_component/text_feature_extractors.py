@@ -47,7 +47,9 @@ def SDAE_feature_extracter_from_texts():
     pass
 
 
-def HDP_feature_extracter_from_texts(mashup_api:str,features):
+fixed_vector_modes = ['HDP','Bert']
+def vector_feature_extracter_from_texts(mashup_api:str, features):
+    # 使用固定的文本特征初始化embedding层，HDP和Bert可用
     ID_input = Input(shape=(1,), dtype='int32')
     text_embedding_layer = Embedding(len(features), len(features[0]),
                                             embeddings_initializer=Constant(features),

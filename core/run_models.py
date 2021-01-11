@@ -144,27 +144,23 @@ def bl_DHSR_new(a_dataset):
         print('DHSR, slt_num:{}, train_predict,done!'.format(slt_num))
 
 
-def bl_PasRec(a_dataset):
+def bl_PasRec():
     model_name = 'PasRec_2path'  # 'PasRec_2path'
-    epoch_num = 20  # 之前是40  40比20差点
+    epoch_num = 60  # 之前是40  40比20差点
     neighbor_size = 15
     topTopicNum = 3
 
-    train_data, test_data = get_train_test_data(a_dataset.train_data, a_dataset.test_data)
-    HINRec_model = HINRec(model_name=model_name, epoch_num=epoch_num, neighbor_size=neighbor_size, topTopicNum=topTopicNum)
+    args = data_repository.get_args()
+    train_data, test_data = data_repository.get_ds().train_data, data_repository.get_ds().test_data
 
-    # 使用LDA处理PasRec的相似度   50 100 150
-    # HINRec_model = HINRec_new(model_name=model_name, semantic_mode='LDA', LDA_topic_num=50, epoch_num=epoch_num,
-    #                           neighbor_size=neighbor_size,
-    #                           topTopicNum=topTopicNum)
+    HINRec_model = HINRec(args,model_name=model_name, epoch_num=epoch_num, neighbor_size=neighbor_size, topTopicNum=topTopicNum)
     if os.path.exists(HINRec_model.weight_path):
         print('have trained,return!')
     else:
         # 这里是每隔20epoch测试一下，所以train中输入test_data
         HINRec_model.train(test_data)
         HINRec_model.save_model()
-
-        evalute_by_epoch(HINRec_model, HINRec_model, HINRec_model.model_name,test_data,evaluate_by_slt_apiNum = True)  # ,if_save_recommend_result=True)
+        evalute_by_epoch(HINRec_model, HINRec_model, HINRec_model.model_name,test_data,evaluate_by_slt_apiNum = False)  # ,if_save_recommend_result=True)
 
 
 def bl_IsRec(a_dataset):
